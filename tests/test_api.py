@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
+from sqlalchemy.pool import StaticPool
 from sqlalchemy.orm import sessionmaker
 
 from app import composicao
@@ -17,7 +18,12 @@ from app.infraestrutura.moodle.fake import MoodleFake
 
 @pytest.fixture
 def cliente(monkeypatch) -> TestClient:
-    engine = create_engine("sqlite://", future=True, connect_args={"check_same_thread": False})
+    engine = create_engine(
+        "sqlite://",
+        future=True,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
     Base.metadata.create_all(engine)
     SessaoTeste = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False, future=True)
     monkeypatch.setattr(database_mod, "engine", engine)

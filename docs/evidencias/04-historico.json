@@ -1,0 +1,58 @@
+[
+    {
+        "id": 4,
+        "fluxo": "vinculos",
+        "escola_id": null,
+        "ano": 2025,
+        "status": "concluida",
+        "iniciada_em": "2026-10-27T19:23:29.435071",
+        "finalizada_em": "2026-10-27T19:23:29.442400",
+        "processados": 4,
+        "criados": 0,
+        "reaproveitados": 4,
+        "falhas": 0,
+        "mensagem": null
+    },
+    {
+        "id": 3,
+        "fluxo": "turmas",
+        "escola_id": null,
+        "ano": 2025,
+        "status": "concluida",
+        "iniciada_em": "2026-10-27T19:23:29.427588",
+        "finalizada_em": "2026-10-27T19:23:29.434070",
+        "processados": 2,
+        "criados": 0,
+        "reaproveitados": 2,
+        "falhas": 0,
+        "mensagem": null
+    },
+    {
+        "id": 2,
+        "fluxo": "vinculos",
+        "escola_id": null,
+        "ano": 2025,
+        "status": "concluida",
+        "iniciada_em": "2026-10-27T19:23:29.399144",
+        "finalizada_em": "2026-10-27T19:23:29.408432",
+        "processados": 4,
+        "criados": 4,
+        "reaproveitados": 0,
+        "falhas": 0,
+        "mensagem": null
+    },
+    {
+        "id": 1,
+        "fluxo": "turmas",
+        "escola_id": null,
+        "ano": 2025,
+        "status": "concluida",
+        "iniciada_em": "2026-10-27T19:23:29.381643",
+        "finalizada_em": "2026-10-27T19:23:29.397296",
+        "processados": 2,
+        "criados": 2,
+        "reaproveitados": 0,
+        "falhas": 0,
+        "mensagem": null
+    }
+]

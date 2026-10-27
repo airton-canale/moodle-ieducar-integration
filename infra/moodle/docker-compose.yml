@@ -1,0 +1,41 @@
+# Moodle + MariaDB para o ambiente de demonstração da integração.
+# Imagens Bitnami (repositório "bitnamilegacy", onde a Bitnami mantém as tags
+# antigas desde 2025). Credenciais padrão do admin: user / bitnami1.
+services:
+  moodle-db:
+    image: bitnamilegacy/mariadb:11.4
+    container_name: moodle-db
+    environment:
+      ALLOW_EMPTY_PASSWORD: "yes"
+      MARIADB_USER: bn_moodle
+      MARIADB_DATABASE: bitnami_moodle
+      MARIADB_CHARACTER_SET: utf8mb4
+      MARIADB_COLLATE: utf8mb4_unicode_ci
+    volumes:
+      - moodle_db:/bitnami/mariadb
+
+  moodle:
+    image: bitnamilegacy/moodle:4.5
+    container_name: moodle
+    environment:
+      MOODLE_DATABASE_TYPE: mariadb
+      MOODLE_DATABASE_HOST: moodle-db
+      MOODLE_DATABASE_PORT_NUMBER: 3306
+      MOODLE_DATABASE_USER: bn_moodle
+      MOODLE_DATABASE_NAME: bitnami_moodle
+      ALLOW_EMPTY_PASSWORD: "yes"
+      MOODLE_USERNAME: user
+      MOODLE_PASSWORD: bitnami1
+      MOODLE_SITE_NAME: Moodle Integracao
+    ports:
+      - "8081:8080"
+    volumes:
+      - moodle_data:/bitnami/moodle
+      - moodledata_data:/bitnami/moodledata
+    depends_on:
+      - moodle-db
+
+volumes:
+  moodle_db:
+  moodle_data:
+  moodledata_data:

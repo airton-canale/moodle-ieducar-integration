@@ -5,6 +5,17 @@ e idempotente, **pessoas**, **turmas** e **vínculos** do i-Educar para o Moodle
 
 Projeto da Entrega 1 — Projeto e Arquitetura de Software (PUCRS).
 
+## Entrega 1 — onde está cada entregável
+
+| Entregável | Caminho |
+|---|---|
+| Relatório (PDF) | [`docs/relatorio/relatorio.pdf`](docs/relatorio/relatorio.pdf) |
+| Relatório (fontes LaTeX, modelo abnTeX2) | [`docs/relatorio/relatorio.tex`](docs/relatorio/relatorio.tex), [`docs/relatorio/referencias.bib`](docs/relatorio/referencias.bib) |
+| Diagramas (Mermaid) | [`docs/arquitetura.md`](docs/arquitetura.md) |
+| Código, Dockerfile e Compose | `app/`, `Dockerfile`, `docker-compose.yml` |
+| Evidências da demonstração | [`docs/evidencias/`](docs/evidencias/) |
+| Roteiro da demonstração | seção [Demonstração](#demonstração) |
+
 ## Arquitetura
 
 ```
@@ -41,10 +52,14 @@ app/
 ## Subir ambiente completo
 
 Compose unificado via `include:` traz iEducar, Moodle e integração em um único stack.
+O Moodle está versionado em `infra/moodle/`; o i-Educar oficial é baixado para
+`infra/i-educar/` (versão fixada no `Makefile`).
 
 ```bash
+make infra                    # baixa o i-Educar oficial (só na primeira vez)
 cp .env.example .env
 docker compose up -d --build
+make ieducar-install          # instala e popula o i-Educar (só na primeira vez)
 ```
 
 Serviços expostos:
@@ -167,9 +182,10 @@ Cobertura: unitários de domínio (pessoa, tradutor), orquestração E2E com fak
 ## Relatório e diagramas
 
 - Diagramas Mermaid navegáveis no GitHub: `docs/arquitetura.md`
-- Relatório LaTeX (fontes + PDF): `docs/relatorio/relatorio.tex`
-- Compilar PDF local: `make relatorio` (requer `latexmk` + `texlive`)
-- Alternativa sem instalar: subir `relatorio.tex` no [Overleaf](https://www.overleaf.com)
+- Relatório LaTeX no modelo canônico abnTeX2: `docs/relatorio/relatorio.tex` + `referencias.bib`
+- PDF gerado: `docs/relatorio/relatorio.pdf`
+- Recompilar: `make relatorio` (requer `latexmk` + `texlive` com o pacote `abntex2`)
+- Sem instalar nada: subir `relatorio.tex` e `referencias.bib` no [Overleaf](https://www.overleaf.com)
 
 ## Variáveis de ambiente
 

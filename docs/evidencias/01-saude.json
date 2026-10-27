@@ -1,0 +1,8 @@
+{
+    "banco": "ok",
+    "moodle": {
+        "sitename": "Moodle Fake",
+        "siteurl": "fake://moodle"
+    },
+    "moodle_erro": null
+}

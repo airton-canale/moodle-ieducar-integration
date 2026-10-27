@@ -1,6 +1,8 @@
 include:
-  - path: ../T1/i-educar/docker-compose.yml
-  - path: ../T1/moodle/docker-compose.yml
+  # i-Educar oficial, baixado por `make infra` (não versionado aqui)
+  - path: infra/i-educar/docker-compose.yml
+  # Moodle + MariaDB, versionado neste repositório
+  - path: infra/moodle/docker-compose.yml
 
 services:
   integracao:
@@ -12,7 +14,7 @@ services:
       IEDUCAR_BASE_URL: http://nginx
       MOODLE_BASE_URL: http://moodle:8080
     ports:
-      - "8001:8000"
+      - "8000:8000"
     volumes:
       - ./app:/app/app
     depends_on:

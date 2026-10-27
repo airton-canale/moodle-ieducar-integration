@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 from sqlalchemy import create_engine
+from sqlalchemy.pool import StaticPool
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.database import Base
@@ -19,6 +20,7 @@ def sessao() -> Session:
         "sqlite://",
         future=True,
         connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
     )
     Base.metadata.create_all(engine)
     Sess = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False, future=True)

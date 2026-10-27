@@ -74,7 +74,8 @@
 <script>
 const fmt = (iso) => iso ? new Date(iso).toLocaleString('pt-BR') : '—';
 const statusPill = (s) => {
-  const cls = s === 'ok' ? 'ok' : s === 'rodando' ? 'run' : s === 'parcial' ? 'warn' : 'err';
+  // valores de StatusExecucao no backend: concluida | em_andamento | abortada
+  const cls = s === 'concluida' ? 'ok' : s === 'em_andamento' ? 'run' : 'err';
   return `<span class="pill ${cls}">${s}</span>`;
 };
 

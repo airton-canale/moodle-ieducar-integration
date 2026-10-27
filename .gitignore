@@ -17,3 +17,14 @@ venv/
 *.fls
 *.fdb_latexmk
 *.synctex.gz
+*.bbl
+*.blg
+*.brf
+*.idx
+*.ilg
+*.ind
+*.lof
+*.lot
+docs/relatorio/_build/
+# i-Educar baixado por `make infra`
+infra/i-educar/

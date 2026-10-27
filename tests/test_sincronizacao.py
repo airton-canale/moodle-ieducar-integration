@@ -61,7 +61,9 @@ def test_curso_criado_fora_do_cache_e_reaproveitado(servico, parametros, moodle_
     # Alguem cria o curso no Moodle fora da integracao
     turma = ieducar_fake.turmas[0]
     moodle_fake.criar_curso(turma, f"ieducar-turma-{turma.id_ieducar}")
-    cursos_antes = len(moodle_fake.cursos)
     servico.sincronizar_turmas(parametros)
-    # Nao deve ter criado duplicado
-    assert len(moodle_fake.cursos) == cursos_antes
+    # Nao deve ter criado duplicado: um curso por turma, idnumbers unicos
+    idnumbers = [c.idnumber for c in moodle_fake.cursos.values()]
+    assert len(idnumbers) == len(set(idnumbers))
+    assert idnumbers.count(f"ieducar-turma-{turma.id_ieducar}") == 1
+    assert len(moodle_fake.cursos) == len(ieducar_fake.turmas)

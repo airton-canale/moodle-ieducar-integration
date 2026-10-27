@@ -1,0 +1,30 @@
+{
+    "turmas": {
+        "id": 3,
+        "fluxo": "turmas",
+        "escola_id": null,
+        "ano": 2025,
+        "status": "concluida",
+        "iniciada_em": "2026-10-27T19:23:29.427588Z",
+        "finalizada_em": "2026-10-27T19:23:29.434070Z",
+        "processados": 2,
+        "criados": 0,
+        "reaproveitados": 2,
+        "falhas": 0,
+        "mensagem": null
+    },
+    "vinculos": {
+        "id": 4,
+        "fluxo": "vinculos",
+        "escola_id": null,
+        "ano": 2025,
+        "status": "concluida",
+        "iniciada_em": "2026-10-27T19:23:29.435071Z",
+        "finalizada_em": "2026-10-27T19:23:29.442400Z",
+        "processados": 4,
+        "criados": 0,
+        "reaproveitados": 4,
+        "falhas": 0,
+        "mensagem": null
+    }
+}
