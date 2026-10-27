@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<title>Integração i-Educar → Moodle</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font: 14px system-ui, sans-serif; max-width: 1100px; margin: 20px auto; padding: 0 16px; }
+  h1 { margin: 0 0 4px; }
+  .sub { opacity: 0.7; margin-bottom: 20px; }
+  .card { border: 1px solid #8884; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
+  label { display: flex; flex-direction: column; font-size: 12px; opacity: 0.8; }
+  input { padding: 6px 8px; border: 1px solid #8886; border-radius: 4px; background: transparent; color: inherit; width: 120px; }
+  button { padding: 8px 14px; border: 0; border-radius: 4px; cursor: pointer; font-weight: 600; }
+  button.primary { background: #2563eb; color: white; }
+  button.secondary { background: #64748b; color: white; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #8882; font-size: 13px; }
+  th { opacity: 0.7; font-weight: 500; }
+  tr.clickable { cursor: pointer; }
+  tr.clickable:hover { background: #8881; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .ok { background: #16a34a33; color: #16a34a; }
+  .err { background: #dc262633; color: #dc2626; }
+  .warn { background: #ca8a0433; color: #ca8a04; }
+  .run { background: #2563eb33; color: #2563eb; }
+  pre { background: #8881; padding: 12px; border-radius: 4px; overflow: auto; max-height: 300px; font-size: 12px; }
+  .health { display: flex; gap: 16px; font-size: 13px; }
+  .health span { display: flex; align-items: center; gap: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .dot.ok { background: #16a34a; }
+  .dot.err { background: #dc2626; }
+</style>
+</head>
+<body>
+<h1>Integração i-Educar → Moodle</h1>
+<div class="sub">Painel de operação · <a href="/docs">Swagger /docs</a> · <a href="/redoc">ReDoc</a></div>
+
+<div class="card">
+  <div class="health" id="health">carregando saúde…</div>
+</div>
+
+<div class="card">
+  <div class="row">
+    <label>escola_id <input id="escola" type="number" placeholder="padrão"></label>
+    <label>ano <input id="ano" type="number" value="2025"></label>
+    <button class="primary" onclick="trigger('completa')">Sync completa</button>
+    <button class="secondary" onclick="trigger('turmas')">Só turmas</button>
+    <button class="secondary" onclick="trigger('vinculos')">Só vínculos</button>
+    <button class="secondary" onclick="setFiltro(null)">Todos</button>
+    <button class="secondary" onclick="limparHistorico()">Limpar histórico</button>
+    <button class="secondary" onclick="loadExecs()" style="margin-left:auto">Atualizar</button>
+  </div>
+</div>
+
+<div class="card">
+  <strong>Execuções recentes</strong>
+  <table>
+    <thead><tr>
+      <th>ID</th><th>Fluxo</th><th>Escola</th><th>Ano</th><th>Status</th>
+      <th>Proc.</th><th>Criados</th><th>Reaprov.</th><th>Falhas</th><th>Iniciada</th>
+    </tr></thead>
+    <tbody id="execs"></tbody>
+  </table>
+</div>
+
+<div class="card" id="detalhe-card" style="display:none">
+  <strong>Detalhe da execução <span id="detalhe-id"></span></strong>
+  <pre id="detalhe"></pre>
+</div>
+
+<script>
+const fmt = (iso) => iso ? new Date(iso).toLocaleString('pt-BR') : '—';
+const statusPill = (s) => {
+  const cls = s === 'ok' ? 'ok' : s === 'rodando' ? 'run' : s === 'parcial' ? 'warn' : 'err';
+  return `<span class="pill ${cls}">${s}</span>`;
+};
+
+async function loadHealth() {
+  try {
+    const r = await fetch('/saude');
+    const h = await r.json();
+    const banco = h.banco === 'ok';
+    const moodle = !h.moodle_erro;
+    document.getElementById('health').innerHTML = `
+      <span><span class="dot ${banco?'ok':'err'}"></span> Banco: ${h.banco}</span>
+      <span><span class="dot ${moodle?'ok':'err'}"></span> Moodle: ${moodle ? (h.moodle?.sitename || 'ok') : h.moodle_erro}</span>
+    `;
+  } catch (e) {
+    document.getElementById('health').innerHTML = `<span><span class="dot err"></span> API offline</span>`;
+  }
+}
+
+let filtroFluxo = null;
+
+function setFiltro(f) { filtroFluxo = f; loadExecs(); }
+
+async function limparHistorico() {
+  if (!confirm('Remover todas as execuções do histórico?')) return;
+  await fetch('/sincronizacoes', { method: 'DELETE' });
+  document.getElementById('detalhe-card').style.display = 'none';
+  await loadExecs();
+}
+
+async function loadExecs() {
+  const r = await fetch('/sincronizacoes');
+  const todos = await r.json();
+  const list = filtroFluxo ? todos.filter(e => e.fluxo === filtroFluxo) : todos;
+  const tbody = document.getElementById('execs');
+  const vazio = filtroFluxo ? `nenhuma execução de ${filtroFluxo}` : 'nenhuma execução ainda';
+  if (!list.length) { tbody.innerHTML = `<tr><td colspan="10" style="opacity:0.6">${vazio}</td></tr>`; return; }
+  tbody.innerHTML = list.slice().reverse().map(e => `
+    <tr class="clickable" onclick="loadDetalhe(${e.id})">
+      <td>${e.id}</td><td>${e.fluxo}</td><td>${e.escola_id ?? '—'}</td><td>${e.ano}</td>
+      <td>${statusPill(e.status)}</td>
+      <td>${e.processados}</td><td>${e.criados}</td><td>${e.reaproveitados}</td><td>${e.falhas}</td>
+      <td>${fmt(e.iniciada_em)}</td>
+    </tr>`).join('');
+}
+
+async function loadDetalhe(id) {
+  const r = await fetch('/sincronizacoes/' + id);
+  const d = await r.json();
+  document.getElementById('detalhe-card').style.display = 'block';
+  document.getElementById('detalhe-id').textContent = '#' + id;
+  document.getElementById('detalhe').textContent = JSON.stringify(d, null, 2);
+}
+
+async function trigger(fluxo) {
+  const btns = document.querySelectorAll('button');
+  btns.forEach(b => b.disabled = true);
+  try {
+    const params = new URLSearchParams();
+    const escola = document.getElementById('escola').value;
+    const ano = document.getElementById('ano').value;
+    if (escola) params.set('escola_id', escola);
+    if (ano) params.set('ano', ano);
+    const r = await fetch(`/sincronizacoes/${fluxo}?${params}`, { method: 'POST' });
+    if (!r.ok) alert('Falhou: ' + r.status + ' ' + await r.text());
+    filtroFluxo = fluxo === 'completa' ? null : fluxo;
+    await loadExecs();
+    await loadHealth();
+  } finally {
+    btns.forEach(b => b.disabled = false);
+  }
+}
+
+loadHealth();
+loadExecs();
+setInterval(loadHealth, 10000);
+setInterval(loadExecs, 5000);
+</script>
+</body>
+</html>

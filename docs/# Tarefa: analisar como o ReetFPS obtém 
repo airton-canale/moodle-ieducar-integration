@@ -1,0 +1,68 @@
+# Tarefa: analisar como o ReetFPS obtém os dados do Point Blank, para o nosso overlay próprio
+
+## Contexto
+Estou construindo um companion/overlay EXTERNO para o Point Blank (PC, PointBlank.exe, 32 bits) como
+alternativa ao ReetFPS e como tema do meu TCC (técnicas de aquisição de dados para overlays externos).
+O suporte do PB informou que overlays como o ReetFPS são permitidos. Regras do projeto, sem exceção:
+- Só LEITURA de memória (ReadProcessMemory). Nunca escrever na memória do jogo, nunca injetar DLL,
+  nunca hookar o PointBlank.exe, nunca interagir com o anticheat.
+- Todo teste é feito em sala com bots, nunca com jogadores reais. Isso é só pesquisa e teste.
+
+Use as ferramentas do REA (rea-agents, via MCP) para a análise. Toda afirmação precisa de evidência
+(trecho decompilado, chamada observada, string, endereço).
+
+## Alvos
+- ReetFPS instalado em: Desktop
+- Point Blank instalado em: Desktop  (build de 06/10/2026; PointBlank.exe base 0x400000,
+  tamanho 0x1F31000; os offsets estáticos mudam a cada patch, o último deslocou +0x3000)
+
+## O que quero descobrir (em ordem de prioridade)
+1. Jogadores VIVOS por time: de onde o ReetFPS tira vivo/morto de CADA jogador e como liga esse estado
+   ao nick. É o que mais falta no nosso projeto.
+2. Como ele identifica headshot e a arma de cada kill (lê um flag/evento ou deduz?).
+3. Como ele acha os endereços depois de um patch: offsets fixos versão a versão, assinaturas (AOB),
+   cadeias de ponteiro, ou busca em runtime? Baixa tabela de offsets de um servidor?
+4. Como ele se anexa ao jogo: só ReadProcessMemory? driver? leitura de janela/captura de tela?
+5. Como desenha o overlay (janela transparente topmost, hook de DirectX, outro) e como mede FPS.
+6. Kills/mortes/HS dos OUTROS jogadores (tabela do Tab): lê de onde?
+
+## Método
+- Comece pela análise de comportamento: que processo ele abre, com que acesso, que regiões lê, com que
+  frequência, que strings e nomes de símbolo existem. Só depois vá ao código, e só o necessário.
+- Para cada dado acima, entregue: endereço/offset ou assinatura/cadeia de ponteiro, tipo (int/float/
+  string UTF-16/ponteiro), como foi obtido, e uma forma de VERIFICAR no jogo (eu verifico com scripts
+  Lua no Cheat Engine, em sala de bots, antes de aceitar qualquer offset).
+- Política de endereços: você pode substituir os endereços/offsets que já temos (abaixo) pelos que
+  encontrar, desde que com evidência. Se preferir não procurar endereços, use os nossos.
+
+## O que já sabemos (verificado por nós, build de 06/10/2026)
+- [PointBlank.exe+122FDA8] -> "dono" (objeto da sala/partida).
+  - dono+0x540 + slot*4 -> ponteiro para a STRING do nick de cada um dos 16 slots
+    (refcount em +0, tamanho em +4, UTF-16 em +8). [dono+0x53C] = meu slot. Time = paridade do slot.
+    Slots vazios apontam para um mesmo objeto placeholder. Esses objetos são só strings, NÃO structs de
+    jogador: não há vida nem estado neles.
+  - dono+0x008/+0x020/+0x038 (passo 0x18): estados das linhas do feed de kills (1 -> 4), sem conteúdo.
+  - [dono] -> objeto do jogador local: +0x658 = slot da arma ativa (0 primária, 1 pistola, 2 faca,
+    3 granada); +0x6BC = ID do item (1xxxxx primária, 2xxxxx pistola, 3xxxxx faca, 4xxxxx granada).
+- Struct estático do jogador LOCAL: PointBlank.exe+12380C4 = vida (int; 0 morto; máx 115 no modo
+  testado); +12323E8 = kills nesta vida (zera ao morrer); +12380C0 = flag de dano. Não é um array
+  dos 16 jogadores (testamos passos de 0x40 a 0x8000).
+- Widgets numéricos da interface: assinatura "?? ?? ?? ?? FF FF FF 7F 00 00 00 80 00 00 00 80"
+  (registro = hit-4, passo 0x30). Minha linha do Tab: kills em A, mortes em A+0x30, exp em A+0x60,
+  nível em A+0x90; os pontos ficam em outro bloco. Endereços mudam a cada partida e blocos de partidas
+  antigas continuam na memória (precisa escolher o que muda).
+- Pontos por kill (verificado): 5 + arma (fuzil 0, pistola 1, granada 2, faca 3) + 3 se HS + 3 se não
+  for a 1ª kill da vida; 2 kills num golpe (Piercing/MassKill) = soma das duas + 14. Usamos isso para
+  deduzir HS e arma; um flag direto seria melhor.
+- Vida dos bots: float dentro de um objeto "boneco" alocado em pool (blocos de 0x260 observados), ligado
+  em lista encadeada cuja cabeça fica num objeto "mundo" (0x12C09080 naquela sessão). O boneco é
+  destruído na morte e recriado no respawn. NÃO encontramos a ligação boneco -> nick/slot, nem um flag
+  de vivo por jogador, nem kills/HS dos outros jogadores, nem FPS.
+
+## Entrega
+1. docs/reetfps-analise.md: um capítulo por item da lista "O que quero descobrir", com evidência,
+   confiança (alta/média/baixa) e como verificar no jogo. Mais uma seção "o que não deu para ver".
+2. docs/plano-implementacao.md: como reimplementar do zero em C# (leitor via ReadProcessMemory,
+   resolução de endereços resistente a patch, overlay), sem nenhuma linha vinda do ReetFPS.
+3. Se encontrar offsets novos, uma tabela "offset -> dado -> evidência -> como verificar", separada
+   dos nossos, para eu testar com bots antes de adotar.

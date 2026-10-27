@@ -1,0 +1,46 @@
+include:
+  - path: ../T1/i-educar/docker-compose.yml
+  - path: ../T1/moodle/docker-compose.yml
+
+services:
+  integracao:
+    build: .
+    container_name: integracao-ieducar-moodle
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://integracao:integracao@banco:5432/integracao
+      IEDUCAR_BASE_URL: http://nginx
+      MOODLE_BASE_URL: http://moodle:8080
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./app:/app/app
+    depends_on:
+      banco:
+        condition: service_healthy
+      nginx:
+        condition: service_started
+      moodle:
+        condition: service_started
+    extra_hosts:
+      - host.docker.internal:host-gateway
+
+  banco:
+    image: postgres:16-alpine
+    container_name: integracao-banco
+    environment:
+      POSTGRES_DB: integracao
+      POSTGRES_USER: integracao
+      POSTGRES_PASSWORD: integracao
+    volumes:
+      - integracao_pg:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U integracao -d integracao"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  integracao_pg:
